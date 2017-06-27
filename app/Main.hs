@@ -1,10 +1,11 @@
 module Main where
 
-import qualified Data.ByteString      as B
-import Data.Aeson
-import System.Environment (setEnv)
+import           Data.Aeson
+import qualified Data.ByteString    as B
+import           System.Environment (setEnv)
 
-import Eval
+import           Eval
+import           Plugin
 
 printValue :: Value -> IO ()
 printValue = print . encode
@@ -16,6 +17,6 @@ main = do
   result <- decodeWithEval envPlugin bs
   case result of
     Left err -> putStrLn err
-    Right v -> printValue v
+    Right v  -> printValue v
 
 

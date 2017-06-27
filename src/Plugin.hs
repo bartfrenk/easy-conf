@@ -1,8 +1,9 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 module Plugin (Plugin,
                runPlugin,
                envPlugin,
+               failPlugin,
                convert) where
 
 import           Control.Monad.Except

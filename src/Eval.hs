@@ -1,8 +1,7 @@
 module Eval (evalText,
              eval,
              evalValue,
-             decodeWithEval,
-             envPlugin) where
+             decodeWithEval) where
 
 import           Control.Monad.Except
 import           Control.Monad.Trans  (MonadIO)
