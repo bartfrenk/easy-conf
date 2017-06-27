@@ -23,5 +23,5 @@ web:
 
 ## Desiderata
 
+- finish Monoid instance for Plugin
 - improve this README file
-- actually make the language extensible

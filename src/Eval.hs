@@ -12,9 +12,9 @@ import           Data.Maybe           (fromMaybe)
 import           Data.String.Conv     (toS)
 import qualified Data.Text            as T
 import           Data.Yaml
-import           System.Environment
 
 import           Parser
+import           Plugin
 
 evalText :: MonadIO m => Plugin m -> T.Text -> ExceptT String m T.Text
 evalText p s = do
@@ -24,14 +24,8 @@ evalText p s = do
       throwError $ "valid expression '" ++ toS s ++ "' did not return a value"
     Just v -> return v
 
-type Plugin m = String -> String -> ExceptT String m (Maybe T.Text)
-
-envPlugin :: MonadIO m => Plugin m
-envPlugin "env" k = do s <- liftIO $ lookupEnv k; return (s >>= convert)
-envPlugin n _ = throwError $ "function '" ++ n ++ "' not defined"
-
 eval :: MonadIO m => Plugin m -> Expr -> ExceptT String m (Maybe T.Text)
-eval p (TmFunc n k) = p n k
+eval p (TmFunc name arg) = runPlugin p name arg
 eval _ (TmLit s) = return $ convert s
 eval p (TmOr e f) = do
   v' <- eval p e
@@ -39,8 +33,6 @@ eval p (TmOr e f) = do
     Just v  -> return $ Just v
     Nothing -> eval p f
 
-convert :: String -> Maybe T.Text
-convert = Just . T.pack
 
 evalValue :: MonadIO m => Plugin m -> Value -> ExceptT String m Value
 evalValue p (String t) = redecode <$> evalText p t
