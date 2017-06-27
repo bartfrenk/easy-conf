@@ -1,0 +1,3 @@
+web:
+  port: getEnv(PORT) or 8000
+  host: getEnv(HOST) or localhost

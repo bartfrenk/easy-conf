@@ -1,6 +1,21 @@
 module Main where
 
-import Lib
+import qualified Data.ByteString      as B
+import Data.Aeson
+import System.Environment (setEnv)
+
+import Eval
+
+printValue :: Value -> IO ()
+printValue = print . encode
 
 main :: IO ()
-main = someFunc
+main = do
+  bs <- B.readFile "res/test.yaml"
+  setEnv "PORT" "5000"
+  result <- decodeWithEval bs
+  case result of
+    Left err -> putStrLn err
+    Right v -> printValue v
+
+
