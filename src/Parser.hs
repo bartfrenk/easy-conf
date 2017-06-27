@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Parser where
@@ -9,8 +10,8 @@ module Parser where
 import           Control.Monad         (void)
 import           Control.Monad.Except
 import           Data.Char             (isDigit, isUpper)
-import qualified Data.Text            as T
 import           Data.Functor.Identity
+import qualified Data.Text             as T
 import           Text.Parsec
 
 
@@ -41,10 +42,15 @@ nonQuoted = lexeme $ many1 nonSpace
 parenthesized :: CharStream s => Parser s a -> Parser s a
 parenthesized = lexeme . between (symbol "(") (symbol ")")
 
-tmGetEnv :: CharStream s => Parser s Expr
-tmGetEnv = do
-  void $ symbol "getEnv"
-  TmGetEnv <$> parenthesized envVar
+-- TODO: specify allowed function names and arguments
+tmFunc :: CharStream s => Parser s Expr
+tmFunc = do
+  void $ symbol "$"
+  TmFunc <$> funcName <*> parenthesized envVar
+
+funcName :: CharStream s => Parser s String
+funcName = lexeme $ many1 letter
+
 
 nat :: CharStream s => Parser s String
 nat = lexeme $ many1 digit
@@ -60,18 +66,19 @@ envVar = lexeme $ (:) <$> firstChar <*> many nonFirstChar
 expr :: CharStream s => Parser s Expr
 expr = chainr1 term op
   where op = TmOr <$ lexeme (symbol "or")
-        term = tmGetEnv <|> tmLit
+        term = tmFunc <|> tmLit
 
 data Expr
-  = TmGetEnv String
+  = TmFunc String String
   | TmLit String
   | TmOr Expr Expr
   deriving (Eq, Show)
 
-example :: String
-example = "getEnv(X) or www.bla.com"
+example :: T.Text
+example = "$env(X) or www.bla.com"
 
 parseExpr :: Monad m => T.Text -> ExceptT String m Expr
 parseExpr s = case parse (lexeme expr <* eof) "" s of
   Left err -> throwError $ show err
-  Right e -> return e
+  Right e  -> return e
+

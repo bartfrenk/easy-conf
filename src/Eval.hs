@@ -1,7 +1,8 @@
 module Eval (evalText,
              eval,
              evalValue,
-             decodeWithEval) where
+             decodeWithEval,
+             envPlugin) where
 
 import           Control.Monad.Except
 import           Control.Monad.Trans  (MonadIO)
@@ -15,42 +16,48 @@ import           System.Environment
 
 import           Parser
 
-evalText :: MonadIO m => T.Text -> ExceptT String m T.Text
-evalText s = do
-  v' <- parseExpr s >>= eval
+evalText :: MonadIO m => Plugin m -> T.Text -> ExceptT String m T.Text
+evalText p s = do
+  v' <- parseExpr s >>= eval p
   case v' of
     Nothing ->
       throwError $ "valid expression '" ++ toS s ++ "' did not return a value"
     Just v -> return v
 
-eval :: MonadIO m => Expr -> m (Maybe T.Text)
-eval (TmGetEnv k) = do s <- liftIO $ lookupEnv k; return (s >>= convert)
-eval (TmLit s) = return $ convert s
-eval (TmOr e f) = do
-  v' <- eval e
+type Plugin m = String -> String -> ExceptT String m (Maybe T.Text)
+
+envPlugin :: MonadIO m => Plugin m
+envPlugin "env" k = do s <- liftIO $ lookupEnv k; return (s >>= convert)
+envPlugin n _ = throwError $ "function '" ++ n ++ "' not defined"
+
+eval :: MonadIO m => Plugin m -> Expr -> ExceptT String m (Maybe T.Text)
+eval p (TmFunc n k) = p n k
+eval _ (TmLit s) = return $ convert s
+eval p (TmOr e f) = do
+  v' <- eval p e
   case v' of
     Just v  -> return $ Just v
-    Nothing -> eval f
+    Nothing -> eval p f
 
 convert :: String -> Maybe T.Text
 convert = Just . T.pack
 
-evalValue :: MonadIO m => Value -> ExceptT String m Value
-evalValue (String t) = redecode <$> evalText t
+evalValue :: MonadIO m => Plugin m -> Value -> ExceptT String m Value
+evalValue p (String t) = redecode <$> evalText p t
   where redecode t0 = fromMaybe (String t0) (decode $ toS t0)
-evalValue (Object obj) = Object <$> evalValue `traverse` obj
-evalValue (Array arr) = Array <$> evalValue `traverse` arr
-evalValue v = return v
+evalValue p (Object obj) = Object <$> evalValue p `traverse` obj
+evalValue p (Array arr) = Array <$> evalValue p `traverse` arr
+evalValue _ v = return v
 
 decodeM :: (Monad m, FromJSON a) => B.ByteString -> ExceptT String m a
 decodeM bs = case decodeEither bs of
   Right val -> return val
   Left err  -> throwError err
 
-decodeWithEval :: FromJSON a => B.ByteString -> IO (Either String a)
-decodeWithEval bs = runExceptT $ do
+decodeWithEval :: FromJSON a => Plugin IO -> B.ByteString -> IO (Either String a)
+decodeWithEval p bs = runExceptT $ do
   value <- decodeM bs
-  res <- fromJSON <$> evalValue value
+  res <- fromJSON <$> evalValue p value
   case res of
     Error msg -> throwError msg
     Success a -> return a
