@@ -1,5 +1,7 @@
 # Extensible configuration language
 
+## Description
+
 Program to parse and execute statement in a simple YAML like format.
 
 The main function is `decodeWithEval` in `Parse.hs`. Setting environment
@@ -19,7 +21,7 @@ web:
     host: localhost
 ```
 
-# Desiderata
+## Desiderata
 
 - improve this README file
 - actually make the language extensible
