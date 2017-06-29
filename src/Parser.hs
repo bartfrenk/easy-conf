@@ -9,7 +9,7 @@ module Parser where
 
 import           Control.Monad         (void)
 import           Control.Monad.Except
-import           Data.Char             (isDigit, isUpper)
+import           Data.Char             (isAlphaNum)
 import           Data.Functor.Identity
 import qualified Data.Text             as T
 import           Text.Parsec
@@ -46,7 +46,7 @@ parenthesized = lexeme . between (symbol "(") (symbol ")")
 tmFunc :: CharStream s => Parser s Expr
 tmFunc = do
   void $ symbol "$"
-  TmFunc <$> funcName <*> parenthesized envVar
+  TmFunc <$> funcName <*> parenthesized funArg
 
 funcName :: CharStream s => Parser s String
 funcName = lexeme $ many1 letter
@@ -58,10 +58,9 @@ nat = lexeme $ many1 digit
 tmLit :: CharStream s => Parser s Expr
 tmLit = TmLit <$> (quoted <|> nat <|> nonQuoted)
 
-envVar :: CharStream s => Parser s String
-envVar = lexeme $ (:) <$> firstChar <*> many nonFirstChar
-  where firstChar = satisfy (\a -> isUpper a || a == '_')
-        nonFirstChar = satisfy (\a -> isUpper a || isDigit a || a == '_')
+funArg :: CharStream s => Parser s String
+funArg = lexeme $ many1 argChar
+  where argChar = satisfy (\a -> isAlphaNum a || a == '_')
 
 expr :: CharStream s => Parser s Expr
 expr = chainr1 term op
