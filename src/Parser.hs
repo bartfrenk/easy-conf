@@ -9,7 +9,7 @@ module Parser where
 
 import           Control.Monad         (void)
 import           Control.Monad.Except
-import           Data.Char             (isAlphaNum)
+import           Data.Char             (isAlphaNum, isPunctuation)
 import           Data.Functor.Identity
 import qualified Data.Text             as T
 import           Text.Parsec
@@ -60,7 +60,7 @@ tmLit = TmLit <$> (quoted <|> nat <|> nonQuoted)
 
 funArg :: CharStream s => Parser s String
 funArg = lexeme $ many1 argChar
-  where argChar = satisfy (\a -> isAlphaNum a || a == '_')
+  where argChar = satisfy (\a -> isAlphaNum a || a == '.' || a == '_')
 
 expr :: CharStream s => Parser s Expr
 expr = chainr1 term op

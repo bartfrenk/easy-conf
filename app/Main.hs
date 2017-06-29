@@ -14,7 +14,7 @@ main :: IO ()
 main = do
   bs <- B.readFile "res/test.yaml"
   setEnv "PORT" "5000"
-  result <- decodeWithEval envPlugin bs
+  result <- decodeWithEval (envPlugin <> idPlugin) bs
   case result of
     Left err -> putStrLn err
     Right v  -> printValue v
