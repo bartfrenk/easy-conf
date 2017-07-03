@@ -20,8 +20,3 @@ web:
     port: 5000
     host: localhost
 ```
-
-## Desiderata
-
-- finish Monoid instance for Plugin
-- improve this README file
