@@ -1,58 +1,48 @@
 module Data.Config.Eval
-  ( evalText
-  , eval
+  ( evalExpr
   , evalValue
-  , decodeWithEval
+  , throwDecode
   ) where
 
-import           Control.Monad.Except
-import           Data.Aeson           hiding (decode)
-import qualified Data.ByteString      as B
-import           Data.Maybe           (fromMaybe)
-import           Data.String.Conv     (toS)
-import qualified Data.Text            as T
+import           Control.Monad.Catch (Exception, MonadThrow, throwM)
+import           Data.Aeson          hiding (decode)
+import qualified Data.ByteString     as B
+import           Data.Text           (Text)
+import           Data.Text           (pack)
+import           Data.Typeable
 import           Data.Yaml
 
-import           Data.Config.Parser
-import           Data.Config.Plugin
+import           Data.Config.Expr    (Expr (..), parseExpr)
+import           Data.Config.Plugin  (Plugin, throwRunPlugin)
 
-evalText :: Monad m => Plugin m -> T.Text -> ExceptT String m T.Text
-evalText p s = do
-  v' <- parseExpr s >>= eval p
-  case v' of
-    Nothing ->
-      throwError $ "valid expression '" ++ toS s ++ "' did not return a value"
-    Just v -> return v
+data EvalException
+  = DecodingFailed String
+  deriving (Show, Typeable)
 
-eval :: Monad m => Plugin m -> Expr -> ExceptT String m (Maybe T.Text)
-eval p (TmFunc name arg) = runPlugin p name arg
-eval _ (TmLit s) = return $ convert s
-eval p (TmOr e f) = do
-  v' <- eval p e
-  case v' of
-    Just v -> return $ Just v
-    Nothing -> eval p f
+instance Exception EvalException
 
-evalValue :: Monad m => Plugin m -> Value -> ExceptT String m Value
-evalValue p (String t) = redecode <$> evalText p t
+evalExpr :: MonadThrow m => Plugin m -> Expr -> m (Maybe Text)
+evalExpr p (TmFunc name arg) = throwRunPlugin p name arg
+evalExpr _ (TmLit s) = pure $ Just $ pack s
+evalExpr p (TmOr e f) = evalExpr p e >>= \case
+  Just value -> pure $ Just value
+  Nothing -> evalExpr p f
+
+evalValue :: MonadThrow m => Plugin m -> Value -> m Value
+evalValue plugin (String txt) = parseExpr txt >>= evalExpr plugin >>= \case
+  Nothing -> pure $ String txt
+  Just txt' -> pure $ String txt'
+evalValue plugin (Object obj) = Object <$> evalValue plugin `traverse` obj
+evalValue plugin (Array arr) = Array <$> evalValue plugin `traverse` arr
+evalValue _ value = return value
+
+throwDecode :: (MonadThrow m, FromJSON a) => Plugin m -> B.ByteString -> m a
+throwDecode plugin bs =
+  fromJSON <$> (throwDecode bs >>= evalValue plugin) >>= \case
+    Error msg -> throwM $ DecodingFailed msg
+    Success a -> return a
   where
-    redecode t0 = fromMaybe (String t0) (decode $ toS t0)
-evalValue p (Object obj) = Object <$> evalValue p `traverse` obj
-evalValue p (Array arr) = Array <$> evalValue p `traverse` arr
-evalValue _ v = return v
-
-decodeM :: (Monad m, FromJSON a) => B.ByteString -> ExceptT String m a
-decodeM bs =
-  case decodeEither bs of
-    Right val -> return val
-    Left err -> throwError err
-
-decodeWithEval ::
-     (Monad m, FromJSON a) => Plugin m -> B.ByteString -> m (Either String a)
-decodeWithEval p bs =
-  runExceptT $ do
-    value <- decodeM bs
-    res <- fromJSON <$> evalValue p value
-    case res of
-      Error msg -> throwError msg
-      Success a -> return a
+    throwDecode bs =
+      case decodeEither bs of
+        Right value -> pure value
+        Left msg -> throwM $ DecodingFailed msg

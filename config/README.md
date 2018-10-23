@@ -22,20 +22,18 @@ import           Data.Aeson
 import qualified Data.ByteString    as B
 import           System.Environment (setEnv)
 
-import           Eval
-import           Plugin
+import           Data.Config (throwDecode, defaultPlugin)
 
 printValue :: Value -> IO ()
 printValue = print . encode
 
 main :: IO ()
 main = do
-  bs <- B.readFile "test.yaml"
   setEnv "PORT" "5000"
-  result <- decodeWithEval (envPlugin <> idPlugin) bs
-  case result of
-    Left err -> putStrLn err
-    Right v  -> printValue v
+
+  bs <- B.readFile "test.yaml"
+  value <- throwDecode defaultPlugin bs
+  printValue value
 ```
 
 prints the YAML object:

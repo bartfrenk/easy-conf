@@ -1,10 +1,11 @@
-module Data.Config.Parser where
+module Data.Config.Expr where
 
 import           Control.Monad         (void)
-import           Control.Monad.Except
-import           Data.Char             (isAlphaNum, isPunctuation)
+import           Control.Monad.Catch   (Exception, MonadThrow, throwM)
+import           Data.Char             (isAlphaNum)
 import           Data.Functor.Identity
-import qualified Data.Text             as T
+import           Data.Text             (Text)
+import           Data.Typeable
 import           Text.Parsec
 
 type CharStream s = Stream s Identity Char
@@ -36,7 +37,6 @@ nonQuoted = lexeme $ many1 nonSpace
 parenthesized :: CharStream s => Parser s a -> Parser s a
 parenthesized = lexeme . between (symbol "(") (symbol ")")
 
--- TODO: specify allowed function names and arguments
 tmFunc :: CharStream s => Parser s Expr
 tmFunc = do
   void $ symbol "$"
@@ -63,18 +63,21 @@ expr = chainr1 term op
     term = tmFunc <|> tmLit
 
 data Expr
-  = TmFunc String
-           String
+  = TmFunc String String
   | TmLit String
-  | TmOr Expr
-         Expr
+  | TmOr Expr Expr
   deriving (Eq, Show)
 
-example :: T.Text
-example = "$env(X) or www.bla.com"
+newtype ParseException = ParseException ParseError
+  deriving (Typeable)
 
-parseExpr :: Monad m => T.Text -> ExceptT String m Expr
+instance Show ParseException where
+  show (ParseException err) = show err
+
+instance Exception ParseException
+
+parseExpr :: MonadThrow m => Text -> m Expr
 parseExpr s =
   case parse (lexeme expr <* eof) "" s of
-    Left err -> throwError $ show err
+    Left err -> throwM $ ParseException err
     Right e -> return e

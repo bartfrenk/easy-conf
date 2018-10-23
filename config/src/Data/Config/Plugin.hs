@@ -1,55 +1,73 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module Data.Config.Plugin
   ( Plugin
-  , runPlugin
+  , PluginResult(..)
   , envPlugin
-  , failPlugin
   , idPlugin
-  , convert
+  , makePlugin
+  , throwRunPlugin
   , (<>)
   ) where
 
-import Control.Monad.Except
-import Control.Monad.Trans (MonadIO)
-import Data.Monoid ((<>))
-import qualified Data.Text as T
-import System.Environment (lookupEnv)
+import           Control.Monad.Catch (Exception, throwM, MonadThrow)
+import           Control.Monad.Trans (MonadIO, liftIO)
+import           Data.Monoid         ((<>))
+import           Data.String         (IsString (..))
+import           Data.Text           (Text)
+import qualified Data.Text           as T
+import           Data.Typeable       (Typeable)
+import           System.Environment  (lookupEnv)
+
+
+type PluginMatch = String
+
+data PluginResult =
+  NoMatch | NoResult | Result Text
+
+data PluginException
+  = NoMatchingPlugin PluginMatch
+  deriving (Show, Typeable)
+
+instance Exception PluginException
+
+instance IsString PluginResult where
+  fromString s = Result $ T.pack s
 
 newtype Plugin m = Plugin
-  { runPlugin :: String -> String -> ExceptT String m (Maybe T.Text)
+  { runPlugin :: PluginMatch -> String -> m PluginResult
   }
 
 envPlugin :: MonadIO m => Plugin m
 envPlugin =
-  makePlugin "env" $ \arg -> do
-    s <- liftIO $ lookupEnv arg
-    return (s >>= convert)
+  makePlugin "env" $ \arg ->
+    liftIO $ lookupEnv arg >>= \case
+      Nothing -> pure NoResult
+      Just val -> pure $ fromString val
 
 idPlugin :: Monad m => Plugin m
-idPlugin = makePlugin "id" $ \arg -> return $ convert arg
+idPlugin = makePlugin "id" $ \arg -> pure $ fromString arg
 
-makePlugin :: Monad m => String -> (String -> m (Maybe T.Text)) -> Plugin m
+makePlugin :: Monad m => PluginMatch -> (String -> m PluginResult) -> Plugin m
 makePlugin match f =
   Plugin $ \name arg ->
     if name == match
-      then ExceptT $ Right <$> f arg
-      else runPlugin failPlugin name arg
+      then f arg
+      else pure $ NoMatch
 
-failPlugin :: Monad m => Plugin m
-failPlugin =
-  Plugin $ \name _ -> throwError $ "function '" ++ name ++ "' not defined"
-
-convert :: String -> Maybe T.Text
-convert = Just . T.pack
+neverMatch :: Monad m => Plugin m
+neverMatch = Plugin $ \_ _ -> pure NoMatch
 
 instance Monad m => Monoid (Plugin m) where
-  mempty = failPlugin
-  p `mappend` q =
-    Plugin $ \name arg ->
-      ExceptT $ do
-        res' <- runExceptT (runPlugin p name arg)
-        case res' of
-          Left _ -> runExceptT $ runPlugin q name arg
-          Right res -> return $ Right res
+  mempty = neverMatch
+  p `mappend` q = Plugin $ \name arg -> do
+    runPlugin p name arg >>= \case
+      NoMatch -> runPlugin q name arg
+      result@_ -> pure result
+
+
+throwRunPlugin :: MonadThrow m => Plugin m -> PluginMatch -> String -> m (Maybe Text)
+throwRunPlugin plugin match arg = runPlugin plugin match arg >>= \case
+  NoMatch -> throwM $ NoMatchingPlugin match
+  NoResult -> pure Nothing
+  Result txt -> pure $ Just txt

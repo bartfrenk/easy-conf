@@ -16,6 +16,8 @@ description: >-
 dependencies:
 - base >= 4.7 && < 5
 
+ghc-options: -Wall -fno-warn-name-shadowing
+
 default-extensions:
   - DataKinds
   - ConstraintKinds
@@ -28,6 +30,7 @@ default-extensions:
   - GeneralizedNewtypeDeriving
   - MultiParamTypeClasses
   - OverloadedStrings
+  - StrictData
 
 library:
   source-dirs: src
@@ -39,3 +42,4 @@ library:
     - string-conv
     - text
     - yaml
+    - exceptions

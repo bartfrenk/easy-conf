@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3f6df8507f5c3954fdb1e46e8b560f618251c963fcb159bc6a90a2ee443bea07
+-- hash: c83a3f8dcf26e4fbdce4b1bf58ad29a8b1e0b08f069437435576e36f0910c0a3
 
 name:           config
 version:        0.1.0
@@ -26,18 +26,21 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Config
       Data.Config.Eval
-      Data.Config.Parser
+      Data.Config.Expr
       Data.Config.Plugin
   other-modules:
       Paths_config
   hs-source-dirs:
       src
-  default-extensions: DataKinds ConstraintKinds DeriveGeneric NamedFieldPuns LambdaCase MultiWayIf FlexibleInstances FlexibleContexts GeneralizedNewtypeDeriving MultiParamTypeClasses OverloadedStrings
+  default-extensions: DataKinds ConstraintKinds DeriveGeneric NamedFieldPuns LambdaCase MultiWayIf FlexibleInstances FlexibleContexts GeneralizedNewtypeDeriving MultiParamTypeClasses OverloadedStrings StrictData
+  ghc-options: -Wall -fno-warn-name-shadowing
   build-depends:
       aeson
     , base >=4.7 && <5
     , bytestring
+    , exceptions
     , mtl
     , parsec
     , string-conv
