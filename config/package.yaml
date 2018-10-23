@@ -1,0 +1,39 @@
+name: config
+version: 0.1.0
+github: "bartfrenk/haskell-utils/config"
+license: BSD3
+author: "Bart Frenk"
+maintainer: "bart.frenk@gmail.com"
+copyright: "2018 Bart Frenk"
+
+extra-source-files:
+- README.md
+
+description: >-
+  Please see the README on GitHub at
+  <https://github.com/bartfrenk/haskell-utils/config/README.md>
+
+dependencies:
+- base >= 4.7 && < 5
+
+default-extensions:
+  - DataKinds
+  - DeriveGeneric
+  - NamedFieldPuns
+  - LambdaCase
+  - MultiWayIf
+  - FlexibleInstances
+  - GeneralizedNewtypeDeriving
+  - MultiParamTypeClasses
+  - OverloadedStrings
+
+library:
+  source-dirs: src
+  dependencies:
+    - aeson
+    - bytestring
+    - mtl
+    - parsec
+    - string-conv
+    - text
+    - yaml

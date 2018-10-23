@@ -1,0 +1,46 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 5512a3035199c113f6ef02db0c78c43ba6802d765aa576cc964d42f29192b9a8
+
+name:           config
+version:        0.1.0
+description:    Please see the README on GitHub at <https://github.com/bartfrenk/haskell-utils/config/README.md>
+homepage:       https://github.com/bartfrenk/haskell-utils#readme
+bug-reports:    https://github.com/bartfrenk/haskell-utils/issues
+author:         Bart Frenk
+maintainer:     bart.frenk@gmail.com
+copyright:      2018 Bart Frenk
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/bartfrenk/haskell-utils
+  subdir: config
+
+library
+  exposed-modules:
+      Eval
+      Parser
+      Plugin
+  other-modules:
+      Paths_config
+  hs-source-dirs:
+      src
+  default-extensions: DataKinds DeriveGeneric NamedFieldPuns LambdaCase MultiWayIf FlexibleInstances GeneralizedNewtypeDeriving MultiParamTypeClasses OverloadedStrings
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , mtl
+    , parsec
+    , string-conv
+    , text
+    , yaml
+  default-language: Haskell2010
