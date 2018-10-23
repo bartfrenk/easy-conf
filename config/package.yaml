@@ -18,11 +18,13 @@ dependencies:
 
 default-extensions:
   - DataKinds
+  - ConstraintKinds
   - DeriveGeneric
   - NamedFieldPuns
   - LambdaCase
   - MultiWayIf
   - FlexibleInstances
+  - FlexibleContexts
   - GeneralizedNewtypeDeriving
   - MultiParamTypeClasses
   - OverloadedStrings

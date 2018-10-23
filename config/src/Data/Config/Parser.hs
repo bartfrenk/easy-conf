@@ -1,11 +1,4 @@
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE FlexibleContexts     #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE OverloadedStrings    #-}
-{-# LANGUAGE UndecidableInstances #-}
-
-module Parser where
+module Data.Config.Parser where
 
 import           Control.Monad         (void)
 import           Control.Monad.Except
@@ -13,7 +6,6 @@ import           Data.Char             (isAlphaNum, isPunctuation)
 import           Data.Functor.Identity
 import qualified Data.Text             as T
 import           Text.Parsec
-
 
 type CharStream s = Stream s Identity Char
 
@@ -33,11 +25,13 @@ symbol name = lexeme $ string name
 
 quoted :: CharStream s => Parser s String
 quoted = lexeme $ between (symbol "'") (symbol "'") $ many nonQuote
-  where nonQuote = satisfy (/= '\'')
+  where
+    nonQuote = satisfy (/= '\'')
 
 nonQuoted :: CharStream s => Parser s String
 nonQuoted = lexeme $ many1 nonSpace
-  where nonSpace = satisfy (not . flip elem spaceChars)
+  where
+    nonSpace = satisfy (not . flip elem spaceChars)
 
 parenthesized :: CharStream s => Parser s a -> Parser s a
 parenthesized = lexeme . between (symbol "(") (symbol ")")
@@ -51,7 +45,6 @@ tmFunc = do
 funcName :: CharStream s => Parser s String
 funcName = lexeme $ many1 letter
 
-
 nat :: CharStream s => Parser s String
 nat = lexeme $ many1 digit
 
@@ -60,24 +53,28 @@ tmLit = TmLit <$> (quoted <|> nat <|> nonQuoted)
 
 funArg :: CharStream s => Parser s String
 funArg = lexeme $ many1 argChar
-  where argChar = satisfy (\a -> isAlphaNum a || a == '.' || a == '_')
+  where
+    argChar = satisfy (\a -> isAlphaNum a || a == '.' || a == '_')
 
 expr :: CharStream s => Parser s Expr
 expr = chainr1 term op
-  where op = TmOr <$ lexeme (symbol "or")
-        term = tmFunc <|> tmLit
+  where
+    op = TmOr <$ lexeme (symbol "or")
+    term = tmFunc <|> tmLit
 
 data Expr
-  = TmFunc String String
+  = TmFunc String
+           String
   | TmLit String
-  | TmOr Expr Expr
+  | TmOr Expr
+         Expr
   deriving (Eq, Show)
 
 example :: T.Text
 example = "$env(X) or www.bla.com"
 
 parseExpr :: Monad m => T.Text -> ExceptT String m Expr
-parseExpr s = case parse (lexeme expr <* eof) "" s of
-  Left err -> throwError $ show err
-  Right e  -> return e
-
+parseExpr s =
+  case parse (lexeme expr <* eof) "" s of
+    Left err -> throwError $ show err
+    Right e -> return e
