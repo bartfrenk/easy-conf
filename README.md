@@ -12,7 +12,7 @@ Given a file `test.yaml` with the following content:
 ```yaml
 web:
   port: $env(PORT) or 8000
-  host: $env(HOST) or localhost
+  host: localhost
 ```
 
 The program:
@@ -22,25 +22,28 @@ import           Data.Aeson
 import qualified Data.ByteString    as B
 import           System.Environment (setEnv)
 
-import           Data.Config (throwDecode, defaultPlugin)
+import           Data.Config (decodeWithDefault)
 
-printValue :: Value -> IO ()
-printValue = print . encode
+data Settings = Settings
+  { host :: String
+  , port :: Maybe Int
+  } deriving (Eq, Show, Generic)
+
+instance FromJSON Settings
+
+readSettings :: IO Settings
+readSettings = do
+  setEnv "PORT" "5000"
+  bs <- B.readFile "test.yaml"
+  decodeWithDefault bs
 
 main :: IO ()
-main = do
-  setEnv "PORT" "5000"
-
-  bs <- B.readFile "test.yaml"
-  value <- throwDecode defaultPlugin bs
-  printValue value
+main = readSettings >>= print
 ```
 
-prints the YAML object:
+prints:
 
-```yaml
-web:
-  port: 5000
-  host: localhost
+```haskell
+Settings { port = Just 5000, host = "localhost" }
 ```
 
