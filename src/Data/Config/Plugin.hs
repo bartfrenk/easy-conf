@@ -3,6 +3,7 @@
 module Data.Config.Plugin
   ( Plugin
   , PluginResult(..)
+  , MonadEnv(..)
   , envPlugin
   , idPlugin
   , makePlugin
@@ -11,13 +12,12 @@ module Data.Config.Plugin
   ) where
 
 import           Control.Monad.Catch (Exception, throwM, MonadThrow)
-import           Control.Monad.Trans (MonadIO, liftIO)
 import           Data.Monoid         ((<>))
 import           Data.String         (IsString (..))
 import           Data.Text           (Text)
 import qualified Data.Text           as T
 import           Data.Typeable       (Typeable)
-import           System.Environment  (lookupEnv)
+import qualified System.Environment as Sys
 
 
 type PluginMatch = String
@@ -38,10 +38,16 @@ newtype Plugin m = Plugin
   { runPlugin :: PluginMatch -> String -> m PluginResult
   }
 
-envPlugin :: MonadIO m => Plugin m
+class Monad m => MonadEnv m where
+  lookupEnv :: String -> m (Maybe String)
+
+instance MonadEnv IO where
+  lookupEnv = Sys.lookupEnv
+
+envPlugin :: MonadEnv m => Plugin m
 envPlugin =
   makePlugin "env" $ \arg ->
-    liftIO $ lookupEnv arg >>= \case
+    lookupEnv arg >>= \case
       Nothing -> pure NoResult
       Just val -> pure $ fromString val
 

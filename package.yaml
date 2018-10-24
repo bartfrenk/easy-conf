@@ -1,4 +1,4 @@
-name: config
+name: easy-conf
 version: 0.1.0
 github: "bartfrenk/haskell-utils/config"
 license: BSD3
@@ -15,6 +15,9 @@ description: >-
 
 dependencies:
 - base >= 4.7 && < 5
+- exceptions
+- string-conv
+- text
 
 ghc-options: -Wall -fno-warn-name-shadowing
 
@@ -40,6 +43,22 @@ library:
     - mtl
     - parsec
     - string-conv
-    - text
     - yaml
-    - exceptions
+    - unordered-containers
+
+tests:
+  spec:
+    cpp-options: -DTEST
+    main: Spec.hs
+    source-dirs:
+      - test
+    dependencies:
+      - easy-conf
+      - mtl
+      - containers
+      - bytestring
+      - hspec
+      - hspec-discover
+      - aeson
+      - QuickCheck
+    build-tools: hspec-discover
