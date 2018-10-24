@@ -1,6 +1,6 @@
 resolver: lts-11.9
 packages:
-- config
+- '.'
 extra-deps: []
 flags: {}
 extra-package-dbs: []
