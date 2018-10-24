@@ -1,9 +1,9 @@
-# Extensible configuration language
+# Data.Config: Extensible configuration language
 
 ## Description
 
 Simple configuration language for Haskell programs based on YAML and inspired by
-EDN. See the next section for an example on how to use it.
+EDN.
 
 ## Example
 
