@@ -40,7 +40,7 @@ evalValue plugin (String txt) = parseExpr txt >>= evalExpr plugin >>= \case
   Just txt' -> throwDecode $ toS txt'
 evalValue plugin (Object obj) = Object <$> evalValue plugin `traverse` obj
 evalValue plugin (Array arr) = Array <$> evalValue plugin `traverse` arr
-evalValue _ value = return value
+evalValue _ value = pure value
 
 decodeWithPlugin :: (MonadThrow m, FromJSON a) => Plugin m -> B.ByteString -> m a
 decodeWithPlugin plugin bs = throwDecode bs >>= evalValue plugin >>= throwFromJSON
@@ -53,7 +53,7 @@ decodeWithPluginNested plugin = recur
     recur (key:rest) (Object obj) =
       case Map.lookup key obj of
         Nothing -> throwM $ NoSuchKey key
-        Just val' -> decodeWithPluginNested plugin rest val'
+        Just val' -> recur rest val'
     recur (key:_) _ = throwM $ NoSuchKey key
 
 throwFromJSON :: (MonadThrow m, FromJSON a) => Value -> m a
