@@ -3,7 +3,7 @@ import           Control.Monad.Reader
 import           Data.Aeson           (FromJSON)
 import           Data.Bifunctor       (first)
 import           Data.ByteString      (ByteString)
-import           Data.Either (isLeft)
+import           Data.Either          (isLeft)
 import           Data.Map             (Map)
 import qualified Data.Map             as Map
 import           Data.Text            (Text)
@@ -90,8 +90,6 @@ main = hspec $ do
       let settings = "server:\n  host: $env(HOST) or localhost\n  port: 5000"
       decodeNested defaultEnv ["server"] settings
         `shouldBe` mkSettings "10.10.0.1" 5000
-
-
 
   where
 
