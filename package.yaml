@@ -34,6 +34,7 @@ default-extensions:
   - MultiParamTypeClasses
   - OverloadedStrings
   - StrictData
+  - MonoLocalBinds
 
 library:
   source-dirs: src
