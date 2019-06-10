@@ -64,13 +64,15 @@ makePlugin match f =
 neverMatch :: Monad m => Plugin m
 neverMatch = Plugin $ \_ _ -> pure NoMatch
 
-instance Monad m => Monoid (Plugin m) where
-  mempty = neverMatch
-  p `mappend` q = Plugin $ \name arg -> do
+instance Monad m => Semigroup (Plugin m) where
+  p <> q = Plugin $ \name arg -> do
     runPlugin p name arg >>= \case
       NoMatch -> runPlugin q name arg
       result@_ -> pure result
 
+instance Monad m => Monoid (Plugin m) where
+  mempty = neverMatch
+  p `mappend` q = p <> q
 
 throwRunPlugin :: MonadThrow m => Plugin m -> PluginMatch -> String -> m (Maybe Text)
 throwRunPlugin plugin match arg = runPlugin plugin match arg >>= \case

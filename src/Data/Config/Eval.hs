@@ -64,9 +64,9 @@ throwFromJSON val =
 
 throwDecode :: (MonadThrow m, FromJSON a) => B.ByteString -> m a
 throwDecode bs =
-  case decodeEither bs of
+  case decodeEither' bs of
     Right value -> pure value
-    Left msg -> throwM $ DecodingFailed msg
+    Left msg -> throwM $ DecodingFailed (show msg)
 
 
 
